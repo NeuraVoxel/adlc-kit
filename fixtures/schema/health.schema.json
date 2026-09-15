@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adlc-kit/schemas/health.json",
+  "title": "HealthStatus",
+  "description": "Payload of GET /health, served by the Node and Python faces.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["status", "uptime_seconds"],
+  "properties": {
+    "status": { "type": "string", "const": "ok" },
+    "uptime_seconds": { "type": "integer", "minimum": 0 }
+  }
+}

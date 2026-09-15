@@ -1,0 +1,45 @@
+{
+  "name": "adlc-kit",
+  "version": "0.1.0",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.7.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev:server": "pnpm --filter @adlc-kit/server dev",
+    "dev:web": "pnpm --filter @adlc-kit/web dev",
+    "dev:python": "uv run --project python python src/adlc_kit/server.py",
+    "build": "pnpm --filter @adlc-kit/web run build",
+    "typecheck": "tsc --noEmit -p packages/contracts && tsc --noEmit -p server && tsc --noEmit -p apps/web && tsc --noEmit -p tsconfig.tools.json",
+    "typecheck:python": "uv run --project python mypy",
+    "lint": "oxlint .",
+    "lint:fix": "oxlint . --fix",
+    "lint:python": "uv run --project python ruff check python",
+    "format:python": "uv run --project python ruff format --check python",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:python": "uv run --project python pytest",
+    "check:ci": "tsx scripts/run-gates.ts ci-primary",
+    "check:python": "tsx scripts/run-gates.ts ci-python",
+    "check:contracts": "tsx scripts/run-gates.ts ci-contracts",
+    "check:e2e": "tsx scripts/run-gates.ts ci-e2e",
+    "doc-sync": "tsx scripts/run-gates.ts doc-sync",
+    "check:all": "tsx scripts/run-gates.ts check-all",
+    "gen:contracts": "tsx scripts/generate-contracts.ts --write",
+    "postinstall": "lefthook install"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^22.20.0",
+    "jsdom": "^29.0.0",
+    "lefthook": "^2.1.9",
+    "oxlint": "1.76.0",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3",
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^4.1.8"
+  }
+}

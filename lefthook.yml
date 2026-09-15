@@ -1,0 +1,15 @@
+# Git hooks (lefthook). 本地检查点保持快速；穷举矩阵归 CI。
+# 安装：pnpm install 时经根 postinstall 的 `lefthook install` 自动执行。
+pre-commit:
+  jobs:
+    - name: lint (staged)
+      glob: '*.{ts,tsx}'
+      run: pnpm exec oxlint --fix {staged_files}
+
+    - name: whitespace (staged)
+      run: git diff --cached --check
+
+pre-push:
+  jobs:
+    - name: typecheck
+      run: pnpm run typecheck
