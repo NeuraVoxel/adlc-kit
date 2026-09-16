@@ -4,6 +4,8 @@ Notable changes to this repository are listed here by released semver. The versi
 
 ## Unreleased
 
+## [0.1.0] — 2026-09-16
+
 ### Added
 
 - The integrated kit assembled from adlc-kit-ts and adlc-kit-py: TypeScript faces (Fastify server, React web), the Python face (FastAPI under uv), and the shared rule system (run-gates, bilingual pairing, Agent Notes gates, inbox/learning/kit-* workflows).
