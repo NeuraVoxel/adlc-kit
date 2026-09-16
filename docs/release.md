@@ -6,7 +6,7 @@ A release is an explicit cut, never a side effect of development. The maintainer
 
 ## Authority
 
-The released version lives in root `package.json`. Each cut gets an annotated git tag `v<version>`; the tag and the manifest must always agree. Development commits never touch the version.
+This repository carries two version authorities that must always agree: root `package.json` (the TypeScript faces) and `python/pyproject.toml` (the Python face). Each cut gets one annotated git tag `v<version>` covering both. Development commits never touch either version.
 
 ## ChangeLog format
 
@@ -22,15 +22,15 @@ The released version lives in root `package.json`. Each cut gets an annotated gi
 ### Removed
 ```
 
-Section names under a released cut describe shipped reality (Added / Fixed / Removed / Changed); the newest released heading must match the version authority. Entries state behavior, not narration — what a consumer gets, not how the change was derived.
+Section names under a released cut describe shipped reality (Added / Fixed / Removed / Changed); the newest released heading must match both version authorities. Entries state behavior, not narration — what a consumer gets, not how the change was derived.
 
 ## What one cut carries
 
-One commit does all of: the version bump, the Unreleased-to-`[<version>]` rename, version references that pin a released version, next-cut attributions rewritten to the released version (including "下一 cut"), and the annotated `v<version>` tag.
+One commit does all of: the version bump in both authorities, the Unreleased-to-`[<version>]` rename, version references that pin a released version, next-cut attributions rewritten to the released version (including "下一 cut"), and the annotated `v<version>` tag.
 
 ## Checks
 
-`pnpm run check:all` runs before the release commit. Any failure stops the cut; gates and thresholds are never loosened to pass it.
+The full gate set (`pnpm run check:all`, every lane including `ci-e2e`) runs before the release commit. Any failure stops the cut; gates and thresholds are never loosened to pass it.
 
 ## Explicitly outside a cut
 

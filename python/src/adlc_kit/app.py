@@ -28,3 +28,8 @@ def create_app(uptime: Callable[[], int] | None = None) -> FastAPI:
         return HealthStatus(status="ok", uptime_seconds=uptime_seconds())
 
     return app
+
+
+#: Module-level ASGI instance for uvicorn's ``module:variable`` form; the
+#: factory stays the test and composition entry.
+app = create_app()

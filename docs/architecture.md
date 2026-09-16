@@ -2,57 +2,46 @@
 
 English | [中文](architecture.zh.md)
 
-adlc-kit-ts is the TypeScript reference kit of the adlc-kit series. This file is the map to read before changing `server/`, `apps/web/`, `packages/`, or `scripts/`; decision rationale lives in [Agent Notes](../.agents/notes/README.md), and step-by-step guides do not live here.
+adlc-kit is the integrated shape of the adlc-kit series: TypeScript faces and the Python face in one repository, joined by the contract pipeline. This file is the map to read before changing `server/`, `apps/web/`, `python/`, `packages/`, or `scripts/`; decision rationale lives in [Agent Notes](../.agents/notes/README.md).
 
 ## Composition
 
 | Directory | Responsibility |
 |---|---|
 | `apps/web/` | React + Vite frontend; the browser face (bundler resolution, DOM lib); the bundle must not reach Node APIs |
-| `server/` | Fastify backend; the Node face (NodeNext); tsx executes TS directly; serves `GET /health` |
-| `packages/contracts/` | Cross-surface contract source. In phase 3 this becomes the home of generated artifacts (gen/verify pairs, two-sided same-PR); today it holds the hand-written source of truth |
-| `packages/create-adlc-kit-ts/` | The installer: scaffolds a new project from this checkout or adopts rule components into an existing one; the checkout is the template |
-| `scripts/` | The `run-gates.ts` orchestrator and verify scripts; language-agnostic infrastructure that never imports business code |
+| `server/` | Fastify backend; the Node face (NodeNext); serves `GET /health` validated by the generated contract |
+| `python/` | FastAPI service; the Python face (uv-managed, strict mypy); serves the same `/health` contract through the generated pydantic model |
+| `packages/contracts/` | Generated TypeScript wire artifacts; the only hand-written file is the `index.ts` re-export |
+| `fixtures/` | The seam: `schema/*.schema.json` is the single hand-authored wire contract; the JSON files are replayed offline by both faces |
+| `scripts/` | The `run-gates.ts` orchestrator, verify gates, the contract generator, and the e2e bootstrap |
 | `docs/` | The architecture map (this file), the [testing strategy](testing.md), and the [release contract](release.md) |
 | `.agents/` | Decision records (`notes/`), the spark inbox and learning retrospectives, and the `kit-*` workflow skills |
 
-## Language policy
+## The contract pipeline
 
-Human-facing contracts are English-primary with a `.zh.md` Chinese counterpart updated in the same change: `README.md`, `docs/*.md`, `.agents/notes/**/*.md`, and the inbox and learning READMEs. `AGENTS.md` and the `.agents/skills/*/SKILL.md` files stay English-only — agent-facing, to bound model context ([pairing decision](../.agents/notes/implemented/process/2026-09-15-bilingual-doc-pairing.md)). Inbox sparks, `QUEUE.md`, learning notes, and `ChangeLog.md` are single-language by design and outside the pairing gate. `pnpm run doc-sync` rejects missing, orphaned, or structurally drifted counterparts.
+`fixtures/schema/` is the source of truth. `pnpm run gen:contracts` emits `packages/contracts/src/generated/*.ts` (interface + runtime validator) and `python/src/adlc_kit/generated/*.py` (pydantic model); `generate-contracts.ts --check` fails on any drift. Provider and consumer update in the same change as the schema; `ci-contracts` replays the committed fixtures through both faces offline. Hand-written wire types anywhere are forbidden — the seam rules live in [packages/AGENTS.md](../packages/AGENTS.md).
 
-## Compiler faces
+## Faces and toolchains
 
-The same TypeScript compiles under four face configs, each typechecked independently; shared strictness lives in `tsconfig.base.json`:
+| Face | Runtime | Types | Gates |
+|---|---|---|---|
+| `server/` + `apps/web/` + `packages/` | Node 22, pnpm, tsx | NodeNext / bundler / NodeNext faces under `tsconfig.base.json` | oxlint, tsc, vitest |
+| `python/` | uv-managed Python 3.12 | pydantic models, strict mypy | ruff (lint + format), mypy, pytest |
 
-- `server/tsconfig.json` — NodeNext + node types; runs on Node.
-- `apps/web/tsconfig.json` — esnext + bundler resolution + DOM lib + react-jsx; bundles for the browser.
-- `packages/contracts/tsconfig.json` — NodeNext; the shared type source.
-- `tsconfig.tools.json` — repository tooling: `scripts/`, `vitest.config.ts`, the installer package.
-
-Faces own `module`/`moduleResolution`/`lib`; there is no root solution program. Cross-package types resolve from source through `paths` in `tsconfig.base.json` (the source plane); when an artifact plane arrives (for example tsdown), add the face first and the build second — never merge faces.
+Both toolchains are first-class: the runner treats them as lanes, not as a primary and a bolt-on.
 
 ## Gate system
 
-`pnpm run check:ci` is `scripts/run-gates.ts ci-primary`. The runner only schedules the aggregate graph (spawn commands, `needs` dependencies, bounded parallelism, fail-fast per stage) and never parses a toolchain — adding a lane means adding Gate definitions, not runner changes. Current graph:
+`pnpm run check:all` is what CI runs. The runner only schedules the aggregate graph and never parses a toolchain — adding a lane means adding Gate definitions, not runner changes. Current graph:
 
-- `ci-primary`: lint, typecheck, test — one parallel stage.
-- `doc-sync`: bilingual doc pairing.
-- `check-all`: both of the above; this is what CI runs.
+- `ci-primary`: lint, typecheck, test — the TypeScript faces.
+- `ci-python`: py-lint, py-format, py-typecheck, py-test — each with its working directory (`cwd`) on the Python root.
+- `ci-contracts`: schema/artifact freshness plus the TypeScript and Python fixture replays.
+- `doc-sync`: bilingual doc pairing, note classification, note format, archive integrity.
+- `ci-e2e`: the live cross-stack check — boots the Python service on a real socket and validates its `/health` payload with the TypeScript generated validator. The only lane where a live process is required.
 
-Extension points:
+Git hook ownership: pre-commit runs fast staged-file checks only (lint --fix, trailing whitespace), pre-push runs the TypeScript typecheck, and CI owns the exhaustive matrix.
 
-- **New verify gate**: `scripts/verify-<invariant>.ts` with a spec proving it rejects one invalid case, wired into `gatesForMode`.
-- **New lane** (for example `ci-web`, `ci-python`): extend the `Mode` union and `gatesForMode`; the runner body does not change.
-- **UI copy gate**: when locale dictionaries arrive, add a verify gate rejecting copy hard-coded in components.
-- **End-to-end (phase 3)**: a `ci-e2e` lane, separate from unit lanes, self-skipping without credentials.
+## Roadmap provenance
 
-Git hook ownership: pre-commit runs fast staged-file checks only (lint --fix, trailing whitespace), pre-push runs typecheck only, and CI owns the exhaustive matrix. Fast local checkpoints are the price of hooks that stay installed.
-
-## Cross-stack seam (phase 3 preview)
-
-`packages/contracts` admits exactly two kinds of cross-stack shared artifacts:
-
-1. **Contract schemas** — per-language types are generated from them; hand-written type copies in any language are forbidden; generation freshness is gated by a gen/verify pair.
-2. **Fixtures committed to git** — replayed offline by both sides, which is what keeps every lane independently validatable.
-
-A contract edit updates provider and consumer in the same change; live-process integration verification lives only in the `ci-e2e` lane. The three-phase roadmap and its composition rules: [Agent Note](../.agents/notes/implemented/architecture/2026-09-15-adlc-kit-three-phase-roadmap.md). The installer design: [Agent Note](../.agents/notes/implemented/process/2026-09-15-create-adlc-kit-ts-installer.md).
+This repository is phase 3 of the three-phase roadmap: `adlc-kit-ts` and `adlc-kit-py` were validated independently first; this kit is their composition plus the contract pipeline, not a third from-scratch build. The roadmap and its composition rules: the [roadmap note in adlc-kit-ts](https://github.com/NeuraVoxel/adlc-kit-ts/blob/main/.agents/notes/implemented/architecture/2026-09-15-adlc-kit-three-phase-roadmap.md); this kit's assembly decisions: the [assembly note](../.agents/notes/implemented/process/2026-09-15-assemble-adlc-kit.md).

@@ -7,7 +7,7 @@ export function createApp(): FastifyInstance {
 
   app.get('/health', async (): Promise<HealthStatus> => ({
     status: 'ok',
-    uptimeSeconds: Math.floor(process.uptime()),
+    uptime_seconds: Math.floor(process.uptime()),
   }))
 
   return app

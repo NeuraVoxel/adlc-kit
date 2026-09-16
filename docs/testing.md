@@ -8,24 +8,26 @@ Evidence matches the change surface: run the narrowest checks that would fail fo
 
 | Surface | Evidence |
 |---|---|
-| `server/src/**` | The vitest `node` project (`server/tests/`); Fastify `inject()`, no network |
+| `server/src/**` | `server/tests/` through Fastify `inject()`; wire assertions go through the generated validator |
 | `apps/web/src/**` | The vitest `web` project (jsdom + Testing Library) |
-| `packages/contracts/src/**` | The consuming tests on both sides + `pnpm run typecheck` |
-| `scripts/**` | `scripts/run-gates.spec.ts` and `scripts/verify-doc-pairing.spec.ts` + `pnpm run check:all` |
-| `packages/create-adlc-kit-ts/**` | `tests/lib.spec.ts` + a real scaffold/adopt smoke (see below) |
-| `.agents/{inbox,learning,skills}/**`, `ChangeLog.md`, `docs/release.md` | `pnpm run doc-sync` (paired contracts) + review; sparks, queue rows, and learning notes are ungated user content |
-| `docs/**`, `README*` | `pnpm run doc-sync` (bilingual pairing) |
+| `python/src/**` | `python/tests/` through the ASGI transport (FastAPI `TestClient`, no live socket) |
+| `fixtures/schema/**` | `pnpm run gen:contracts` + **both** fixture replays (`ci-contracts`) + every consuming face's tests |
+| `packages/contracts/**`, `python/src/adlc_kit/generated/**` | Never hand-edited; `ci-contracts` freshness gate owns them |
+| `scripts/**` | The gate specs beside each gate + `pnpm run check:all` |
+| `docs/**`, `README*`, `.agents/**` contracts | `doc-sync` |
 
-## Focused runs
+## Lane map
 
 ```sh
-pnpm exec vitest run server/tests/app.spec.ts
-pnpm exec vitest run --project web
-pnpm run doc-sync
+pnpm run check:ci          # TypeScript faces
+pnpm run check:python      # Python face
+pnpm run check:contracts   # freshness + both fixture replays
+pnpm run check:e2e         # live cross-stack check
+pnpm run doc-sync          # docs + notes gates
 ```
 
-Installer changes warrant a real smoke: scaffold into a temp directory and run the gates there, since the copied checkout is the product.
+A schema change is the one surface that always crosses lanes: regenerate, replay both sides, and run the provider faces' tests before reporting.
 
 ## Evolution order
 
-Coverage gates are not enabled yet; introduce a global threshold first, then tighten per-file as risk concentrates. Snapshot lanes and the real e2e lane (`ci-e2e`) arrive in phase 3 and self-skip without credentials; until then, component tests in the `web` project guard user-visible output. Tests describe behavior, not implementation: refactors leave tests alone; behavior changes move with their tests.
+Coverage gates are not enabled yet; introduce a global threshold per face first, then tighten as risk concentrates. Snapshot lanes for user-visible output arrive on demand and self-skip without credentials. Tests describe behavior, not implementation: refactors leave tests alone; behavior changes move with their tests.

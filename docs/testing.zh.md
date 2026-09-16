@@ -8,24 +8,26 @@
 
 | 变更面 | 证据 |
 |---|---|
-| `server/src/**` | vitest 的 `node` project（`server/tests/`）；Fastify `inject()`，无网络 |
+| `server/src/**` | `server/tests/` 经 Fastify `inject()`；wire 断言走生成的校验器 |
 | `apps/web/src/**` | vitest 的 `web` project（jsdom + Testing Library） |
-| `packages/contracts/src/**` | 消费它的双端测试 + `pnpm run typecheck` |
-| `scripts/**` | `scripts/run-gates.spec.ts` 与 `scripts/verify-doc-pairing.spec.ts` + `pnpm run check:all` |
-| `packages/create-adlc-kit-ts/**` | `tests/lib.spec.ts` + 真实脚手架/采纳冒烟（见下） |
-| `.agents/{inbox,learning,skills}/**`、`ChangeLog.md`、`docs/release.md` | `pnpm run doc-sync`（配对合同）+ 评审；spark、排队行与学习笔记是不设门禁的用户内容 |
-| `docs/**`、`README*` | `pnpm run doc-sync`（双语文档配对） |
+| `python/src/**` | `python/tests/` 经 ASGI 传输（FastAPI `TestClient`，不开活套接字） |
+| `fixtures/schema/**` | `pnpm run gen:contracts` + **双端** fixture 回放（`ci-contracts`）+ 每个消费面的测试 |
+| `packages/contracts/**`、`python/src/adlc_kit/generated/**` | 永不手改；`ci-contracts` 新鲜度门禁拥有它们 |
+| `scripts/**` | 各门禁旁的 spec + `pnpm run check:all` |
+| `docs/**`、`README*`、`.agents/**` 合同 | `doc-sync` |
 
-## 聚焦运行
+## 泳道映射
 
 ```sh
-pnpm exec vitest run server/tests/app.spec.ts
-pnpm exec vitest run --project web
-pnpm run doc-sync
+pnpm run check:ci          # TypeScript 各面
+pnpm run check:python      # Python 面
+pnpm run check:contracts   # 新鲜度 + 双端回放
+pnpm run check:e2e         # 活进程跨栈检查
+pnpm run doc-sync          # 文档 + notes 门禁
 ```
 
-安装器变更需要真实冒烟：脚手架到临时目录并在其中跑门禁——拷贝出的 checkout 就是产品。
+schema 变更是唯一必然跨泳道的变更面：再生成、双端回放、跑各 provider 面的测试，然后才能汇报。
 
 ## 演进顺序
 
-覆盖率门禁暂未启用；先引入全局阈值，风险集中后再 per-file 收紧。快照泳道与真实 e2e 泳道（`ci-e2e`）在第三步引入，无凭据自跳过；在此之前，`web` project 的组件测试守护用户可见输出。测试描述行为而非实现：重构不动测试，行为变更连同测试一起改。
+覆盖率门禁暂未启用；先按面引入全局阈值，风险集中后再收紧。用户可见输出的快照泳道按需引入，无凭据自跳过。测试描述行为而非实现：重构不动测试，行为变更连同测试一起改。

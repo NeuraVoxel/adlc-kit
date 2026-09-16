@@ -2,10 +2,10 @@ import { defineConfig, defineProject } from 'vitest/config'
 import tsconfigPaths from 'vite-tsconfig-paths'
 
 export default defineConfig({
-  plugins: [tsconfigPaths()],
   test: {
     projects: [
       defineProject({
+        plugins: [tsconfigPaths()],
         test: {
           name: 'node',
           environment: 'node',
@@ -17,6 +17,7 @@ export default defineConfig({
         },
       }),
       defineProject({
+        plugins: [tsconfigPaths()],
         esbuild: { jsx: 'automatic' },
         test: {
           name: 'web',

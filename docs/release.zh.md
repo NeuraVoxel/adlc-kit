@@ -6,7 +6,7 @@
 
 ## 权威
 
-发布版本号以根 `package.json` 为权威。每次切割打一个附注 git tag `v<version>`；tag 与清单必须始终一致。开发提交永不改动版本号。
+本仓库携带两处必须始终一致的版本权威：根 `package.json`（TypeScript 各面）与 `python/pyproject.toml`（Python 面）。每次切割打一个覆盖双面的附注 git tag `v<version>`。开发提交永不改动任何一处版本。
 
 ## ChangeLog 格式
 
@@ -22,15 +22,15 @@
 ### Removed
 ```
 
-已发布条目下的章节名描述已交付的现实（Added / Fixed / Removed / Changed）；最新的已发布标题必须与版本权威一致。条目陈述行为而非叙事——消费者得到什么，而不是变更是怎么推导出来的。
+已发布条目下的章节名描述已交付的现实（Added / Fixed / Removed / Changed）；最新的已发布标题必须与两处版本权威一致。条目陈述行为而非叙事——消费者得到什么，而不是变更是怎么推导出来的。
 
 ## 一次切割携带什么
 
-一个提交完成全部：版本号 bump、Unreleased 改名为 `[<version>]`、钉住已发布版本的版本引用、"下一 cut"类署名改写为已发布版本、附注 tag `v<version>`。
+一个提交完成全部：两处权威的版本号 bump、Unreleased 改名为 `[<version>]`、钉住已发布版本的版本引用、"下一 cut"类署名改写为已发布版本、附注 tag `v<version>`。
 
 ## 检查
 
-发布提交前运行 `pnpm run check:all`。任何失败都终止切割；绝不为了通过而放宽门禁或阈值。
+发布提交前运行全量门禁（`pnpm run check:all`，含 `ci-e2e` 的每条泳道）。任何失败都终止切割；绝不为了通过而放宽门禁或阈值。
 
 ## 明确在切割之外
 
